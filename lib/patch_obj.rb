@@ -38,15 +38,14 @@ class PatchObj
     text = '@@ -' + coords1 + ' +' + coords2 + " @@\n"
 
     # Encode the body of the patch with %xx notation.
-    diffs.each do |op, data|
+    text += diffs.map do |op, data|
       op = case op
             when :insert; '+'
             when :delete; '-'
             when :equal ; ' '
            end
-      data = data.encode('utf-8')
-      text += op + URI.escape(data, /[^0-9A-Za-z_.;!~*'(),\/?:@&=+$\#-]/).gsub('%20', ' ') + "\n"
-    end
+      op + URI.encode(data, /[^0-9A-Za-z_.;!~*'(),\/?:@&=+$\#-]/) + "\n"
+    end.join.gsub('%20', '  ')
     
     return text
   end
