@@ -56,11 +56,11 @@ class DiffMatchPatch
   
     # Check for equality (speedup).
     if text1 == text2
-      return [[:equal, text1]] unless text1.empty?
-      return []
+      return [] if text1.empty?
+      return [[:equal, text1]] 
     end
        
-    checklines = true unless !checklines.nil?
+    checklines = true if checklines.nil?
   
     # Trim off common prefix (speedup).
     common_length = diff_commonPrefix(text1, text2)
@@ -80,7 +80,7 @@ class DiffMatchPatch
   
     # Compute the diff on the middle block.
     diffs = diff_compute(text1, text2, checklines, deadline)
-  
+
     # Restore the prefix and suffix.
     diffs.unshift([:equal, common_prefix]) unless common_prefix.nil?
     diffs.push([:equal, common_suffix]) unless common_suffix.nil?
@@ -177,8 +177,11 @@ class DiffMatchPatch
           if count_delete >= 1 && count_insert >= 1
             # Delete the offending records and add the merged ones.
             a = diff_main(text_delete, text_insert, false, deadline)
-            diffs[pointer - count_delete - count_insert, pointer] = a
-            pointer = pointer - count_delete - count_insert + a.length
+            diffs[pointer - count_delete - count_insert, 
+              count_delete + count_insert] = []
+            pointer = pointer - count_delete - count_insert
+            diffs[pointer, 0] = a
+            pointer = pointer + a.length
           end
           count_insert = 0
           count_delete = 0
@@ -924,7 +927,7 @@ class DiffMatchPatch
 
   # Convert a diff array into a pretty HTML report.
   def diff_prettyHtml(diffs)
-    diffs.each do |op, data|
+    diffs.map do |op, data|
       text = data.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;').gsub('\n', '&para;<br>')
       case op
         when :insert
@@ -1399,30 +1402,14 @@ class DiffMatchPatch
     patches
   end
 
-  # Given an array of patches, return another array that is identical.
-  def patch_deepCopy(patches)
-    patches_copy = []
-    patches.each do |patch|
-      patch_copy = PatchObj.new
-      patch_copy.diffs = patch.diffs.dup
-      patch_copy.start1 = patch.start1
-      patch_copy.start2 = patch.start2
-      patch_copy.length1 = patch.length1
-      patch_copy.length2 = patch.length2
-      patches_copy.push(patch)
-    end
-    
-    patches_copy
-  end
-
   # Merge a set of patches onto the text.  Return a patched text, as well
   # as a list of true/false values indicating which patches were applied.
-  def patch_apply(patches, text)
+  def patch_apply(patches, text)  
     return [text, []]  if patches.empty?
   
     # Deep copy the patches so that no changes are made to originals.
     patches = Marshal.load(Marshal.dump(patches))
-  
+
     null_padding = patch_addPadding(patches)
     text = null_padding + text + null_padding
     patch_splitMax(patches)

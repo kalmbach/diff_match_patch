@@ -45,7 +45,7 @@ class PatchObj
             when :equal ; ' '
            end
       op + URI.encode(data, /[^0-9A-Za-z_.;!~*'(),\/?:@&=+$\#-]/) + "\n"
-    end.join.gsub('%20', '  ')
+    end.join.gsub('%20', ' ')
     
     return text
   end
