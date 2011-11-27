@@ -6,6 +6,12 @@ Gem::Specification.new do |s|
   s.description = "Ruby implementation of Google diff_match_patch"
   s.authors     = ["Jorge Kalmbach"]
   s.email       = 'kalmbach@gmail.com'
-  s.files       = ["lib/diff_match_patch.rb", "lib/patch_obj.rb"]
+  s.files       = [
+    "README.md",
+    "LICENSE",
+    "Rakefile",
+    "lib/diff_match_patch.rb", 
+    "lib/patch_obj.rb", 
+    "test/diff_match_patch-test.rb"]
   s.homepage    = 'https://github.com/kalmbach/diff_match_patch'
 end
