@@ -914,7 +914,7 @@ class DiffMatchPatch
         last_chars2 = chars2
         false
       end
-    end
+    end || 0
 
     if diffs.length != x && diffs[x][0] == :delete
       # The location was deleted.
