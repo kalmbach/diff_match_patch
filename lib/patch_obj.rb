@@ -6,13 +6,13 @@ class PatchObj
   attr_accessor :length1, :length2
   attr_accessor :diffs
 
-  def initialize
+  def initialize(args = {})
     # Initializes with an empty list of diffs.
-    @start1 = nil
-    @start2 = nil
-    @length1 = 0
-    @length2 = 0
-    @diffs = []
+    @start1 = args[:start1]
+    @start2 = args[:start2]
+    @length1 = args[:length1] || 0
+    @length2 = args[:length2] || 0
+    @diffs = args[:diffs] || []
   end
 
   # Emulate GNU diff's format
