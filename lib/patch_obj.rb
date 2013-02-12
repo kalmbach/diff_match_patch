@@ -15,38 +15,38 @@ class PatchObj
     @diffs = []
   end
 
+  OPERATOR_TO_CHAR = {insert: '+', delete: '-', equal: ' '}
+  private_constant :OPERATOR_TO_CHAR
+  
+  ENCODE_REGEX = /[^0-9A-Za-z_.;!~*'(),\/?:@&=+$\#-]/
+  private_constant :ENCODE_REGEX
+
   # Emulate GNU diff's format
   # Header: @@ -382,8 +481,9 @@
   # Indices are printed as 1-based, not 0-based.
   def to_s
-    if length1 == 0
-      coords1 = start1.to_s + ",0"
-    elsif length1 == 1
-      coords1 = (start1 + 1).to_s
-    else
-      coords1 = (start1 + 1).to_s + "," + length1.to_s
-    end
+    coords1 = get_coords(length1, start1)
+    coords2 = get_coords(length2, start2)
 
-    if length2 == 0
-      coords2 = start2.to_s + ",0"
-    elsif length2 == 1
-      coords2 = (start2 + 1).to_s
-    else
-      coords2 = (start2 + 1).to_s + "," + length2.to_s
-    end
-    
-    text = '@@ -' + coords1 + ' +' + coords2 + " @@\n"
+    text = ['@@ -', coords1, ' +', coords2, " @@\n"].join
 
     # Encode the body of the patch with %xx notation.
     text += diffs.map do |op, data|
-      op = case op
-            when :insert; '+'
-            when :delete; '-'
-            when :equal ; ' '
-           end
-      op + URI.encode(data, /[^0-9A-Za-z_.;!~*'(),\/?:@&=+$\#-]/) + "\n"
+      [OPERATOR_TO_CHAR[op], URI.encode(data, ENCODE_REGEX), "\n"].join
     end.join.gsub('%20', ' ')
     
     return text
   end
+
+  def get_coords(length, start)
+    if length == 0
+      start.to_s + ",0"
+    elsif length == 1
+      (start + 1).to_s
+    else
+      (start + 1).to_s + "," + length.to_s
+    end
+  end
+
+  private :get_coords
 end
