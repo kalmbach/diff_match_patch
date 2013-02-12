@@ -1,4 +1,4 @@
-# DiffMatchPatch
+# DiffMatchPatch [![Code Climate](https://codeclimate.com/github/kalmbach/diff_match_patch.png)](https://codeclimate.com/github/kalmbach/diff_match_patch)
 
 A ruby implementation of the google diff-match-patch library.
 http://code.google.com/p/google-diff-match-patch/
