@@ -11,6 +11,8 @@ class DiffMatchPatch
   attr_accessor :patch_margin
   attr_reader :match_maxBits
 
+  FIXNUM_MAX =  2**(0.size * 8 - 2) - 1
+
   def initialize
     # Inits a diff_match_patch object with default settings.
     # Redefine these in your program to override the defaults.
@@ -45,49 +47,52 @@ class DiffMatchPatch
   # stripping any common prefix or suffix off the texts before diffing.
   def diff_main(text1, text2, checklines=true, deadline=nil)
     # Set a deadline by which time the diff must be complete.
-    if deadline.nil? && diff_timeout > 0
-        deadline = Time.now + diff_timeout
-    end
-  
+    deadline ||= Time.now + (diff_timeout.zero? ? FIXNUM_MAX : diff_timeout)
+
     # Check for null inputs.
-    if text1.nil? || text2.nil?
-      raise ArgumentError.new('Null inputs. (diff_main)')
-    end
-  
+    raise ArgumentError.new('Null inputs. (diff_main)') unless text1 || text2
+
     # Check for equality (speedup).
-    if text1 == text2
-      return [] if text1.empty?
-      return [[:equal, text1]] 
-    end
-       
-    checklines = true if checklines.nil?
-  
-    # Trim off common prefix (speedup).
-    common_length = diff_commonPrefix(text1, text2)
-    if common_length.nonzero?
-      common_prefix = text1[0...common_length]
-      text1 = text1[common_length..-1]
-      text2 = text2[common_length..-1]    
-    end
-  
-    # Trim off common suffix (speedup).
-    common_length = diff_commonSuffix(text1, text2)
-    if common_length.nonzero?
-      common_suffix = text1[-common_length..-1]
-      text1 = text1[0...-common_length]
-      text2 = text2[0...-common_length]
-    end
-  
+    return (text1.empty? ? [] : [[:equal, text1]]) if text1 == text2
+
+    # Trim off common prefix and suffix(speedup).
+    common_prefix, text1, text2 = diff_trimCommonPrefix(text1, text2)
+    common_suffix, text1, text2 = diff_trimCommonSuffix(text1, text2)
+
     # Compute the diff on the middle block.
     diffs = diff_compute(text1, text2, checklines, deadline)
 
     # Restore the prefix and suffix.
     diffs.unshift([:equal, common_prefix]) unless common_prefix.nil?
     diffs.push([:equal, common_suffix]) unless common_suffix.nil?
-    diff_cleanupMerge(diffs)  
+    diff_cleanupMerge(diffs)
 
     diffs
   end
+
+  def diff_trimCommonPrefix(text1, text2)
+    if (common_length = diff_commonPrefix(text1, text2)).nonzero?
+      common_prefix = text1[0...common_length]
+      text1 = text1[common_length..-1]
+      text2 = text2[common_length..-1]
+    end
+
+    return [common_prefix, text1, text2]
+  end
+
+  private :diff_trimCommonPrefix
+
+  def diff_trimCommonSuffix(text1, text2)
+    if (common_length = diff_commonSuffix(text1, text2)).nonzero?
+      common_suffix = text1[-common_length..-1]
+      text1 = text1[0...-common_length]
+      text2 = text2[0...-common_length]
+    end
+
+    return [common_suffix, text1, text2]
+  end
+
+  private :diff_trimCommonSuffix
 
   # Find the differences between two texts.  Assumes that the texts do not
   # have any common prefix or suffix.
@@ -552,9 +557,7 @@ class DiffMatchPatch
     end
 
     # Normalize the diff.
-    if changes
-      diff_cleanupMerge(diffs)
-    end
+    diff_cleanupMerge(diffs) if changes
     diff_cleanupSemanticLossless(diffs)
   
     # Find any overlaps between deletions and insertions.
