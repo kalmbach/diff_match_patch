@@ -9,3 +9,7 @@ The Diff Match and Patch libraries offer robust algorithms to perform the operat
   (https://github.com/reima/diff_match_patch-ruby)
 
 Copyright (c) 2011, Jorge Kalmbach <kalmbach.at.gmail.com>
+
+### Notice
+
+Please use the released gem, the code in this repository is under development/experimentation.
