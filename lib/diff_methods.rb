@@ -8,7 +8,8 @@ module DiffMethods
     @diff_timeout = 1
   end
 
-
+  # Find the differences between two texts.  Simplifies the problem by
+  # stripping any common prefix or suffix off the texts before editing.
   def diff_main(text1, text2, checklines=true, deadline=nil)
     # Set a deadline by which time the diff must be complete.
     deadline ||= diff_newDeadline
@@ -22,8 +23,6 @@ module DiffMethods
     diff_main_compute_diff(text1, text2, checklines, deadline)
   end
 
-  # Find the differences between two texts.  Simplifies the problem by
-  # stripping any common prefix or suffix off the texts before editing.
   def diff_main_compute_diff(text1, text2, checklines, deadline)
     # Trim off common prefix and suffix (speedup).
     common_prefix, text1, text2 = diff_trimCommonPrefix(text1, text2)
@@ -78,10 +77,10 @@ module DiffMethods
   # Find the differences between two texts.  Assumes that the texts do not
   # have any common prefix or suffix.
   def diff_compute(text1, text2, checklines, deadline)
-    if diffs = diff_compute_can_speedup?(text1, text2)
+    if diffs = diff_compute_common_cases(text1, text2)
       return diffs
   
-    elsif diffs = diff_compute_can_split?(text1, text2, checklines, deadline)
+    elsif diffs = diff_compute_half_match(text1, text2, checklines, deadline)
       return diffs
   
     elsif checklines && text1.length > 100 && text2.length > 100
@@ -92,54 +91,42 @@ module DiffMethods
     end
   end
 
-  def diff_compute_can_split?(text1, text2, checklines, deadline)
+  def diff_compute_half_match(text1, text2, checklines, deadline)
     if hm = diff_halfMatch(text1, text2)
       # A half-match was found, sort out the return data.
       text1_a, text1_b, text2_a, text2_b, mid_common = hm
+
       # Send both pairs off for separate processing.
       diffs_a = diff_main(text1_a, text2_a, checklines, deadline)
       diffs_b = diff_main(text1_b, text2_b, checklines, deadline)
+
       # Merge the results.
       return diffs_a + [[:equal, mid_common]] + diffs_b
     end
   end
 
-  private :diff_compute_can_split?
+  private :diff_compute_half_match
 
-  def diff_compute_can_speedup?(text1, text2)
-    if text1.empty?
-      # Just add some text (speedup).
-      return [[:insert, text2]] 
+  def diff_compute_common_cases(text1, text2)
+    # Just add some text (speedup).
+    return [[:insert, text2]] if text1.empty?
+    
+    # Just delete some text (speedup).
+    return [[:delete, text1]] if text2.empty?
 
-    elsif text2.empty?
-      # Just delete some text (speedup).
-      return [[:delete, text1]]
+    short, long = [text1, text2].sort_by(&:length)
 
-    else
-      shorttext, longtext = [text1, text2].sort_by(&:length)
-      if i = longtext.index(shorttext)
-        # Shorter text is inside the longer text (speedup).
-        diffs = [
-          [:insert, longtext[0...i]], 
-          [:equal, shorttext],
-          [:insert, longtext[(i + shorttext.length)..-1]]
-        ]
+    # Shorter text is inside the longer text (speedup).
+    if i = long.index(short)
+      op = text1.length > text2.length ? :delete : :insert
+      return [[op, long[0...i]], [:equal, short], [op, long[(i + short.length)..-1]]]
 
-        # Swap insertions for deletions if diff is reversed.
-        if text1.length > text2.length
-            diffs[0][0] = :delete
-            diffs[2][0] = :delete
-        end
-
-        return diffs
-
-      elsif shorttext.length == 1
-        # Single character string.
-        # After the previous speedup, the character can't be an equality.
-        return [[:delete, text1], [:insert, text2]]
-      end
+    # Single character string.
+    elsif short.length == 1
+      # After the previous speedup, the character can't be an equality.
+      return [[:delete, text1], [:insert, text2]]
     end
   end
 
-  private :diff_compute_can_speedup?
+  private :diff_compute_common_cases
 end
