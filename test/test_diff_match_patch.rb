@@ -1204,5 +1204,13 @@ def test_diff_cleanupEfficiency
     patches = @dmp.patch_make('y', 'y123')
     results = @dmp.patch_apply(patches, 'x')
     assert_equal(['x123', [true]], results)
+
+    # Original text edited after the patches creation.
+    text = "Le ciel est bleu et le soleil brille."
+    patches = @dmp.patch_make(text, "Il pleut sur la ville et le soleil ne brille pas.")
+    text = "La lune est blonde et le soleil brille."
+    assert_nothing_raised do
+      @dmp.patch_apply(patches, text)
+    end
   end
 end
