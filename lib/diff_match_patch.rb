@@ -814,7 +814,7 @@ class DiffMatchPatch
       end
     end
 
-    if diffs.length != x && diffs[x][0] == :delete
+    if !x.nil? && diffs.length != x && diffs[x][0] == :delete
       # The location was deleted.
       last_chars2
     else
