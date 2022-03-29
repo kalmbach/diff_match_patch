@@ -727,18 +727,17 @@ class DiffMatchPatch
             end
 
             # Delete the offending records and add the merged ones.
-            if count_delete.zero?
-              diffs[pointer - count_delete - count_insert, count_delete + count_insert] = 
-                [[:insert, text_insert]]
-            elsif count_insert.zero?
-              diffs[pointer - count_delete - count_insert, count_delete + count_insert] = 
-                [[:delete, text_delete]]
-            else
-              diffs[pointer - count_delete - count_insert, count_delete + count_insert] = 
-                [[:delete, text_delete], [:insert, text_insert]]
+            pointer -= count_delete + count_insert;
+            diffs[pointer, count_delete + count_insert] = []
+            if text_delete.length > 0
+              diffs[pointer, 0] = [[:delete, text_delete]]
+              pointer += 1
             end
-            pointer = pointer - count_delete - count_insert +
-              (count_delete.zero? ? 0 : 1) + (count_insert.zero? ? 0 : 1) + 1
+            if text_insert.length > 0
+              diffs[pointer, 0] = [[:insert, text_insert]]
+              pointer += 1
+            end
+            pointer += 1
           elsif pointer != 0 && diffs[pointer - 1][0] == :equal
             # Merge this equality with the previous one.
             diffs[pointer - 1][1] += diffs[pointer][1]
